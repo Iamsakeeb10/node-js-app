@@ -67,8 +67,17 @@ app.post("/sendNotification", async (req, res) => {
   }
 
   console.log("📨 Sending notification for message:", message);
+  console.log("📲 Received token:", message.fcmToken);
 
   try {
+    // Optionally update the user's fcmToken in Firestore if you want to keep it fresh
+    if (message.fcmToken && message.userId) {
+      await db.collection("users").doc(message.userId).update({
+        fcmToken: message.fcmToken,
+      });
+      console.log(`✅ Updated user ${message.userId} FCM token in Firestore`);
+    }
+
     const usersSnapshot = await db.collection("users").get();
     console.log(`📂 Fetched ${usersSnapshot.size} users from Firestore`);
 
@@ -88,7 +97,8 @@ app.post("/sendNotification", async (req, res) => {
 
     console.log(`🚀 Sending notification to ${tokens.length} device(s)`);
 
-    const payload = {
+    const response = await admin.messaging().sendMulticast({
+      tokens,
       notification: {
         title: `${message.username} says:`,
         body: message.text,
@@ -97,32 +107,27 @@ app.post("/sendNotification", async (req, res) => {
       data: {
         click_action: "FLUTTER_NOTIFICATION_CLICK",
       },
-    };
-
-    const response = await admin.messaging().sendToDevice(tokens, payload);
+    });
 
     console.log('✅ Notifications sent results:');
     console.log('   Success count:', response.successCount);
     console.log('   Failure count:', response.failureCount);
 
     if (response.failureCount > 0) {
-      const failedTokens = response.results
-        .map((r, i) => r.error ? tokens[i] : null)
+      const failedTokens = response.responses
+        .map((resp, i) => resp.success ? null : tokens[i])
         .filter(token => token !== null);
 
       console.warn('❌ Failed tokens:', failedTokens);
-      console.warn('❌ Failure details:', response.results.filter(r => r.error));
     }
 
     res.status(200).send(`Notifications sent: ${response.successCount}`);
   } catch (err) {
     console.error("❌ Error sending notifications:", err);
-    if (err.errorInfo) {
-      console.error("Error info:", err.errorInfo);
-    }
     res.status(500).send("Error sending notifications: " + err.message);
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
