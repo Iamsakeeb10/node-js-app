@@ -35,6 +35,26 @@ app.get("/", (req, res) => {
   res.send("Chat notification server is running.");
 });
 
+app.get("/testNotification", async (req, res) => {
+  // Replace this with your actual device's FCM token from Flutter app
+  const testToken = "ebSpCOQfS3uI75qvc76rOC:APA91bGi9wxDxQkFNIhbLgAPhqHLYYhWipU43NRp41Ltu8jEuvs3PX21tmupBHhM94ftV6UsjPw3rrA1l81LhytSa5x1KNUmL115F7Kgpmx7b7z2oYGsmJY";
+
+  try {
+    const response = await admin.messaging().send({
+      token: testToken,
+      notification: {
+        title: "Test Notification",
+        body: "Hello from test endpoint!",
+      },
+    });
+    console.log("✅ Test notification sent:", response);
+    res.send("Test notification sent successfully");
+  } catch (error) {
+    console.error("❌ Error sending test notification:", error);
+    res.status(500).send("Error sending test notification: " + error.message);
+  }
+});
+
 app.post("/sendNotification", async (req, res) => {
   console.log("📬 Received POST /sendNotification request");
 
