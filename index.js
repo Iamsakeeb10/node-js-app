@@ -67,17 +67,8 @@ app.post("/sendNotification", async (req, res) => {
   }
 
   console.log("📨 Sending notification for message:", message);
-  console.log("📲 Received token:", message.fcmToken);
 
   try {
-    // Optionally update the user's fcmToken in Firestore if you want to keep it fresh
-    if (message.fcmToken && message.userId) {
-      await db.collection("users").doc(message.userId).update({
-        fcmToken: message.fcmToken,
-      });
-      console.log(`✅ Updated user ${message.userId} FCM token in Firestore`);
-    }
-
     const usersSnapshot = await db.collection("users").get();
     console.log(`📂 Fetched ${usersSnapshot.size} users from Firestore`);
 
@@ -97,28 +88,18 @@ app.post("/sendNotification", async (req, res) => {
 
     console.log(`🚀 Sending notification to ${tokens.length} device(s)`);
 
-    // const response = await admin.messaging().sendMulticast({
-    //   tokens,
-    //   notification: {
-    //     title: `${message.username} says:`,
-    //     body: message.text,
-    //     sound: "default",
-    //   },
-    //   data: {
-    //     click_action: "FLUTTER_NOTIFICATION_CLICK",
-    //   },
-    // });
-    const response = await admin.messaging().sendToDevice(tokens, {
-  notification: {
-    title: `${message.username} says:`,
-    body: message.text,
-    sound: "default",
-  },
-  data: {
-    click_action: "FLUTTER_NOTIFICATION_CLICK",
-  },
-});
-
+    // Use sendMulticast instead of deprecated sendToDevice
+    const response = await admin.messaging().sendMulticast({
+      tokens,
+      notification: {
+        title: `${message.username} says:`,
+        body: message.text,
+        sound: "default",
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+      },
+    });
 
     console.log('✅ Notifications sent results:');
     console.log('   Success count:', response.successCount);
