@@ -101,16 +101,21 @@ app.post("/sendNotification", async (req, res) => {
     for (const { token, userId } of tokens) {
       try {
         const response = await admin.messaging().send({
-          token,
-          notification: {
-            title: `${message.username} says:`,
-            body: message.text,
-            sound: "default",
-          },
-          data: {
-            click_action: "FLUTTER_NOTIFICATION_CLICK",
-          },
-        });
+  token,
+  notification: {
+    title: `${message.username} says:`,
+    body: message.text,
+  },
+  android: {
+    notification: {
+      sound: "default",
+    },
+  },
+  data: {
+    click_action: "FLUTTER_NOTIFICATION_CLICK",
+  },
+});
+
 
         console.log(`✅ Notification sent to ${userId}:`, response);
         sendResults.push({ token, success: true });
