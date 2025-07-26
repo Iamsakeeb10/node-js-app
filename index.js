@@ -108,7 +108,7 @@ app.post("/sendNotification", async (req, res) => {
   },
   android: {
     notification: {
-      sound: "default",
+      sound: "chat",
     },
   },
   data: {
