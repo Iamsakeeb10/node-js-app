@@ -37,7 +37,7 @@ app.post("/sendNotification", async (req, res) => {
 
    usersSnapshot.forEach((doc) => {
      const data = doc.data();
-     if (data.fcmToken && data.userId !== message.userId) {
+     if (data.fcmToken && data.userId === message.userId) {
        tokens.push(data.fcmToken);
      }
    });
