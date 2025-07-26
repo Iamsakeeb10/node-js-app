@@ -67,8 +67,17 @@ app.post("/sendNotification", async (req, res) => {
   }
 
   console.log("📨 Sending notification for message:", message);
+  console.log("📲 Received token:", message.fcmToken);
 
   try {
+    // Optionally update the user's FCM token in Firestore
+    if (message.fcmToken && message.userId) {
+      await db.collection("users").doc(message.userId).update({
+        fcmToken: message.fcmToken,
+      });
+      console.log(`✅ Updated user ${message.userId} FCM token in Firestore`);
+    }
+
     const usersSnapshot = await db.collection("users").get();
     console.log(`📂 Fetched ${usersSnapshot.size} users from Firestore`);
 
@@ -76,8 +85,7 @@ app.post("/sendNotification", async (req, res) => {
     usersSnapshot.forEach((doc) => {
       const data = doc.data();
       if (data.fcmToken && doc.id !== message.userId) {
-        tokens.push(data.fcmToken);
-        console.log(`📱 Added token for user: ${doc.id}`);
+        tokens.push({ token: data.fcmToken, userId: doc.id });
       }
     });
 
@@ -88,32 +96,42 @@ app.post("/sendNotification", async (req, res) => {
 
     console.log(`🚀 Sending notification to ${tokens.length} device(s)`);
 
-    // Use sendMulticast instead of deprecated sendToDevice
-    const response = await admin.messaging().sendMulticast({
-      tokens,
-      notification: {
-        title: `${message.username} says:`,
-        body: message.text,
-        sound: "default",
-      },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    });
+    const sendResults = [];
 
-    console.log('✅ Notifications sent results:');
-    console.log('   Success count:', response.successCount);
-    console.log('   Failure count:', response.failureCount);
+    for (const { token, userId } of tokens) {
+      try {
+        const response = await admin.messaging().send({
+          token,
+          notification: {
+            title: `${message.username} says:`,
+            body: message.text,
+            sound: "default",
+          },
+          data: {
+            click_action: "FLUTTER_NOTIFICATION_CLICK",
+          },
+        });
 
-    if (response.failureCount > 0) {
-      const failedTokens = response.responses
-        .map((resp, i) => resp.success ? null : tokens[i])
-        .filter(token => token !== null);
-
-      console.warn('❌ Failed tokens:', failedTokens);
+        console.log(`✅ Notification sent to ${userId}:`, response);
+        sendResults.push({ token, success: true });
+      } catch (error) {
+        console.error(`❌ Failed to send to ${userId}:`, error.message);
+        sendResults.push({ token, success: false, error: error.message });
+      }
     }
 
-    res.status(200).send(`Notifications sent: ${response.successCount}`);
+    const successCount = sendResults.filter(r => r.success).length;
+    const failureCount = sendResults.length - successCount;
+
+    const failedTokens = sendResults
+      .filter(r => !r.success)
+      .map(r => r.token);
+
+    if (failedTokens.length > 0) {
+      console.warn("❌ Failed tokens:", failedTokens);
+    }
+
+    res.status(200).send(`✅ Notifications sent: ${successCount}, ❌ failed: ${failureCount}`);
   } catch (err) {
     console.error("❌ Error sending notifications:", err);
     res.status(500).send("Error sending notifications: " + err.message);
