@@ -37,7 +37,8 @@ app.get("/", (req, res) => {
 
 app.get("/testNotification", async (req, res) => {
   // Replace this with your actual device's FCM token from Flutter app
-  const testToken = "ebSpCOQfS3uI75qvc76rOC:APA91bGi9wxDxQkFNIhbLgAPhqHLYYhWipU43NRp41Ltu8jEuvs3PX21tmupBHhM94ftV6UsjPw3rrA1l81LhytSa5x1KNUmL115F7Kgpmx7b7z2oYGsmJY";
+  const testToken = "eUu6YnIjQjyiqsRU1YdAB-:APA91bEqlvNDOgDsIPrWhryKgrtU5CKWwKXt7GoKJzR42Xb_HgzjW4OcWs11ivq4EyWv2pj_Jo6QowwHJfcqtsESbRUGylFJVS7hMW6cCu0bhIPLgtiMTTg";
+  
 
   try {
     const response = await admin.messaging().send({
