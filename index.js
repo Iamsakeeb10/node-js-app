@@ -97,17 +97,28 @@ app.post("/sendNotification", async (req, res) => {
 
     console.log(`🚀 Sending notification to ${tokens.length} device(s)`);
 
-    const response = await admin.messaging().sendMulticast({
-      tokens,
-      notification: {
-        title: `${message.username} says:`,
-        body: message.text,
-        sound: "default",
-      },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    });
+    // const response = await admin.messaging().sendMulticast({
+    //   tokens,
+    //   notification: {
+    //     title: `${message.username} says:`,
+    //     body: message.text,
+    //     sound: "default",
+    //   },
+    //   data: {
+    //     click_action: "FLUTTER_NOTIFICATION_CLICK",
+    //   },
+    // });
+    const response = await admin.messaging().sendToDevice(tokens, {
+  notification: {
+    title: `${message.username} says:`,
+    body: message.text,
+    sound: "default",
+  },
+  data: {
+    click_action: "FLUTTER_NOTIFICATION_CLICK",
+  },
+});
+
 
     console.log('✅ Notifications sent results:');
     console.log('   Success count:', response.successCount);
